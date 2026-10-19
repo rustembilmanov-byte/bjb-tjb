@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>БЖБ / ТЖБ тексеру және талдау</title>
+<style>
+  :root{--bg:#f4f6fb;--card:#fff;--text:#1d2433;--muted:#667085;--accent:#3b5bdb;--ok:#2b9348;--bad:#d62828;--warn:#e8890c;--line:#e3e7ef}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+  .wrap{max-width:900px;margin:0 auto;padding:16px}
+  h1{font-size:1.5rem;margin:8px 0 4px}
+  .sub{color:var(--muted);margin:0 0 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:1.05rem;margin:0 0 10px}
+  label{display:block;font-weight:600;margin:10px 0 4px;font-size:.92rem}
+  select,input[type=number],input[type=text],input[type=password],textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+  textarea{min-height:110px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.row{grid-template-columns:1fr}}
+  button{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer}
+  button.secondary{background:#e9edf8;color:var(--accent)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .status{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:.85rem;font-weight:600}
+  .status.on{background:#e3f6e8;color:var(--ok)}
+  .status.off{background:#fde8e8;color:var(--bad)}
+  .dot{width:9px;height:9px;border-radius:50%;background:currentColor}
+  .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .thumbs img{height:90px;border-radius:8px;border:1px solid var(--line)}
+  .hint{font-size:.85rem;color:var(--muted)}
+  .msg{margin-top:10px;font-size:.92rem}
+  .spin{display:none;margin-top:10px;color:var(--muted)}
+  .score{font-size:2rem;font-weight:800;margin:4px 0}
+  .task{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
+  .task.review{border-color:var(--warn);background:#fff8ec}
+  .task-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .pts{display:flex;align-items:center;gap:6px}
+  .pts input{width:70px;padding:6px 8px}
+  .tag{background:var(--warn);color:#fff;border-radius:6px;padding:1px 8px;font-size:.78rem;font-weight:700}
+  .k{font-weight:600;color:var(--muted);font-size:.82rem;margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{padding:7px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  @media print{.noprint{display:none!important}body{background:#fff}}
+  .tabs{display:flex;gap:8px;margin:14px 0}
+  .tab{background:#e9edf8;color:var(--accent)}
+  .tab.on{background:var(--accent);color:#fff}
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:560px){.row3{grid-template-columns:1fr}}
+  table.rt{width:100%;border-collapse:collapse}
+  table.rt th,table.rt td{border:1px solid #999;padding:5px;text-align:center;font-size:.85rem}
+  table.rt td.l{text-align:left}
+  .stu input{padding:6px 8px;width:100%}
+  .objrow{display:grid;grid-template-columns:1fr 120px 40px;gap:6px;margin-top:6px}
+  .rcenter{text-align:center}
+  #report textarea{min-height:60px;resize:vertical;overflow:hidden;font-family:inherit}
+  #report input#a_date{width:180px}
+  #report p{margin:8px 0}
+  @media print{#report{border:0;padding:0}#report textarea,#report input{border:0;padding:0;resize:none}}
+  #marks canvas{max-width:100%;height:auto;border:1px solid #d7dbe7;border-radius:8px;margin:6px 0;display:block}
+  #marks .lg span{display:inline-block;margin-right:14px;font-size:.9rem}
+  #marks .lg i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="noprint">БЖБ / ТЖБ тексеру және талдау</h1>
+  <p class="sub noprint">1) Өз БЖБ/ТЖБ тапсырмаңызды енгізіңіз. 2) Оқушы жұмыстарын тексертіңіз. 3) 2-бетте талдау автоматты шығады.</p>
+  <span id="net" class="status off noprint"><span class="dot"></span><span id="netText">Интернет жоқ</span></span>
+
+  <div class="card noprint" id="clsBar" style="padding:12px 16px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <strong>Сынып:</strong>
+      <select id="clsSel" style="width:auto;min-width:130px"></select>
+      <button class="secondary" id="clsNew">+ Жаңа сынып</button>
+      <span id="clsNewBox" style="display:none;align-items:center;gap:6px">
+        <input type="text" id="clsNewName" placeholder="Мысалы: 7А" maxlength="30" style="width:130px">
+        <button id="clsNewOk">Қосу</button>
+      </span>
+      <span id="clsNewMsg" class="hint"></span>
+      <button class="secondary" id="clsExport">Сынып файлын жүктеу</button>
+      <label class="secondary" style="display:inline-block;padding:10px 14px;border-radius:10px;cursor:pointer;margin:0">Файлдан ашу<input type="file" id="clsImport" accept=".json,application/json" style="display:none"></label>
+    </div>
+    <p class="hint" style="margin:8px 0 0">Әр сыныптың нәтижесі мен талдауы бөлек сақталады. «Сынып файлын жүктеу» әр сыныпты өз файлына (.json) жазады, ол файлды басқа компьютерде «Файлдан ашу» арқылы қайта ашуға болады.</p>
+  </div>
+
+  <div class="tabs noprint">
+    <button class="tab on" id="tab1">1. Жұмысты тексеру</button>
+    <button class="tab" id="tab2">2. БЖБ / ТЖБ талдауы</button>
+    <button class="tab" id="tab3">3. Сақтау туралы</button>
+  </div>
+  <div id="page1">
+
+  <div class="card noprint">
+    <h2>0. API кілті (бір рет енгізіңіз)</h2>
+    <div class="row">
+      <div>
+        <label for="provider">AI қызметі</label>
+        <select id="provider">
+          <option value="gemini">Google Gemini (тегін режимі бар)</option>
+          <option value="claude">Anthropic Claude (ақылды)</option>
+        </select>
+      </div>
+      <div>
+        <label for="model">Модель атауы</label>
+        <input type="text" id="model" autocomplete="off">
+      </div>
+    </div>
+    <label for="apikey" id="keyLabel">API кілті</label>
+    <input type="password" id="apikey" autocomplete="off">
+    <label style="font-weight:400"><input type="checkbox" id="remember"> Осы браузерде есте сақтау (тек өз компьютеріңізде)</label>
+    <p class="hint" id="keyHint"></p>
+  </div>
+
+  <div class="card noprint">
+    <h2>1. Жұмыс туралы</h2>
+    <div class="row">
+      <div><label for="type">Жұмыс түрі</label><select id="type"><option>БЖБ 1</option><option>БЖБ 2</option><option>БЖБ 3</option><option>ТЖБ</option></select></div>
+      <div><label for="subject">Пән және сынып</label><input type="text" id="subject" placeholder="Мысалы: Математика, 7-сынып"></div>
+    </div>
+    <label for="classInfo">Сыныптың ерекшелігі (AI ескереді)</label>
+    <textarea id="classInfo" style="min-height:70px" placeholder="Мысалы: 24 оқушы; 3 оқушы ЕБҚ; орыс тілді оқушылар бар; есеп шығаруда қиналады"></textarea>
+    <label for="taskPhotos">Өзіңіз жасаған БЖБ / ТЖБ тапсырмасы (PDF, Word .docx немесе фото)</label>
+    <input type="file" id="taskPhotos" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" multiple>
+    <div class="thumbs" id="taskThumbs"></div>
+    <label for="scheme" id="schemeLabel">Оқу мақсаттары, дескрипторлар, балл және дұрыс жауаптар</label>
+    <textarea id="scheme" placeholder="Мысалы:&#10;1-тапсырма | Оқу мақсаты: 7.1.2.3 пропорцияны есеп шығаруда қолдану | Макс. балл: 2&#10;Дұрыс жауап: 36 км/сағ&#10;Дескрипторлар:&#10;1) формуланы дұрыс жазады (1 балл)&#10;2) дұрыс есептеп, жауабын жазады (1 балл)"></textarea>
+    <p><button class="secondary" id="genScheme">AI-мен дескриптор құру / толықтыру</button></p>
+    <div class="msg" id="schemeMsg"></div>
+    <p class="hint" id="schemeHint">Тапсырма файлын (PDF, Word немесе фото) жүктеп, осы батырманы басыңыз: AI оқу мақсатын, дескрипторды және баллды ұсынады. Оны оқып, өзіңізге қарай түзетіңіз, содан кейін оқушы жұмыстарын тексеріңіз. Схема бос болса, AI тексеру кезінде оны өзі құрады, бірақ сіздің схемаңыз дәлірек.</p>
+  </div>
+
+  <div class="card noprint">
+    <h2>2. Оқушы жұмысының фотосы</h2>
+    <label for="student">Оқушының аты-жөні</label>
+    <input type="text" id="student">
+    <label for="studentNote">Оқушыға ескерту (міндетті емес)</label>
+    <input type="text" id="studentNote" placeholder="Мысалы: ЕБҚ оқушы, тапсырма жеңілдетілген">
+    <input type="file" id="workPhotos" accept="image/*" multiple>
+    <div class="thumbs" id="workThumbs"></div>
+    <p class="hint">Бірнеше бетті бірден таңдауға болады. Жарық жақсы, бет тік, мәтін анық болуы керек. iPhone HEIC форматы Chrome-да ашылмаса, Safari-ді қолданыңыз немесе JPG ретінде жіберіңіз.</p>
+    <p><button id="run" disabled>Тексеру</button></p>
+    <div class="hint" id="need"></div>
+    <div class="spin" id="spin">AI жұмысты тексеріп жатыр, 20–60 секунд күтіңіз...</div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="card" id="resCard" style="display:none">
+    <h2>3. Нәтиже <span id="who" class="hint"></span></h2>
+    <div class="score" id="score"></div>
+    <div id="feedback"></div>
+    <div id="marks"></div>
+    <p class="hint noprint">Нәтиже 2-бетке (талдауға) автоматты түсті. Баллдарды қолмен түзетуге болады, жалпы сома мен талдау автоматты өзгереді. «Қарау керек» белгісі бар тапсырмаларды өзіңіз тексеріңіз.</p>
+    <div id="tasks"></div>
+    <div class="toolbar noprint">
+      <button class="secondary" id="nextStu">Келесі оқушы</button>
+      <button class="secondary" onclick="window.print()">Басып шығару / PDF</button>
+    </div>
+  </div>
+
+  <div class="card" id="histCard" style="display:none">
+    <h2>Тексерілген оқушылар</h2>
+    <table><thead><tr><th>Оқушы</th><th>Жұмыс</th><th>Балл</th><th>%</th><th class="noprint"></th></tr></thead><tbody id="hist"></tbody></table>
+    <div class="toolbar noprint"><button class="secondary" id="csv">CSV жүктеу (Excel-де ашылады)</button> <button class="secondary" id="histClear">Тізімді тазалау</button></div>
+    <p class="hint noprint">Нәтижелер осы браузерде сақталады, бетті жапсаңыз да жоғалмайды. Бөтен компьютерде жұмыс істесеңіз, соңында тізімді тазалаңыз. Толығырақ: 3-қойынды «Сақтау туралы».</p>
+  </div>
+
+  <p class="hint">AI қателесуі мүмкін, әсіресе қолжазба нашар болғанда. Соңғы баға мұғалімнің қолында. Оқушылардың фотосы AI-ға өңделу үшін жіберіледі, мектептің ережесін ескеріңіз.</p>
+</div><!-- /page1 -->
+
+  <div id="page3" style="display:none">
+    <div class="card noprint">
+      <h2>Сақтау туралы ескертпелер</h2>
+      <p class="hint" style="margin:0 0 6px"><strong>Не сақталады (әр сынып үшін бөлек):</strong> тексерілген жұмыстардың нәтижесі (оқушы, БЖБ 1 / БЖБ 2 / БЖБ 3 / ТЖБ, балл, оқу мақсаттары); осы беттегі оқушылар кестесі мен балдар; максимум баллдар, тоқсан, пән, сынып, педагог, деңгей шектері; талдау мәтіндері (2, 3, 4-тармақтар), қолмен түзеткендері де; қай нәтиже талдауға алынып қойғаны. API кілті «есте сақтау» құсбелгісі қойылса ғана сақталады.</p>
+      <p class="hint" style="margin:0 0 10px"><strong>Не сақталмайды:</strong> оқушы жұмысының фотолары, фотодағы жасыл/қызыл белгілер, жүктелген тапсырма файлы. Келесі жолы олар қайта жүктеледі.</p>
+      <ul class="hint" style="margin:0;padding-left:20px;line-height:1.55">
+        <li><strong>Деректер қайда тұрады:</strong> нәтижелер мен талдау осы браузерде, осы компьютерде сақталады. Басқа браузерде немесе басқа компьютерде көрінбейді. Браузердің «cookie және сайт деректерін» тазаласаңыз, олар да жойылады. Маңызды кезде Word немесе CSV түрінде жүктеп қойыңыз.</li>
+        <li><strong>Бір папкада ұстаңыз:</strong> файлды басқа орыннан ашсаңыз, браузер оны басқа сайт деп санап, сақталған деректі көрсетпеуі мүмкін.</li>
+        <li><strong>Аты-жөні бірдей жазылсын:</strong> нәтижелер оқушыға аты бойынша тіркеледі. Бір күні «Айдар Б.», келесі күні «Айдар Бақыт» деп жазсаңыз, екі бөлек қатар шығады. Аты бос қалса, «Оқушы 1» деп беріледі.</li>
+        <li><strong>Әр сынып бөлек:</strong> беттің жоғарғы жағындағы «Сынып» тізімінен сыныпты таңдаңыз немесе «+ Жаңа сынып» басыңыз. Әр сыныптың нәтижесі мен талдауы бөлек сақталады, араласпайды. «Сынып файлын жүктеу» әр сыныпты өз файлына (.json) жазады, ол файлды «Файлдан ашу» арқылы басқа компьютерде де ашуға болады.</li>
+        <li><strong>Қолдану мерзімі:</strong> әр жылдың 1 қыркүйегінде жаңа оқу жылына арналған код сұралады (2027-2050 жылдар аралығында, әр жылдың коды бөлек). Кодты енгізген соң бағдарлама келесі қыркүйекке дейін ашық тұрады. Сақталған нәтижелер жоғалмайды.</li>
+        <li><strong>Бөтен компьютерде:</strong> жұмыс аяқталған соң 1-беттегі «Тізімді тазалаңыз», өйткені онда оқушылардың аты-жөні сақталады.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div id="page2" style="display:none">
+    <div class="card noprint">
+      <h2>Талдау туралы мәлімет</h2>
+      <div class="row">
+        <div><label for="a_q">Тоқсан</label><select id="a_q"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+        <div><label for="a_subj">Пән</label><input type="text" id="a_subj"></div>
+      </div>
+      <div class="row">
+        <div><label for="a_class">Сынып</label><input type="text" id="a_class" placeholder="Мысалы: 7А"></div>
+        <div><label for="a_teacher">Педагог (тегі, аты, әкесінің аты)</label><input type="text" id="a_teacher"></div>
+      </div>
+      <label for="a_goal">Мақсаты</label>
+      <input type="text" id="a_goal" value="БЖБ және ТЖБ нәтижелерін талдау, оқушылардың білім деңгейін анықтау">
+      <details style="margin-top:10px"><summary>Деңгей шектерін өзгерту</summary>
+        <div class="row">
+          <div><label for="a_low">Төмен деңгей шегі (%-дан төмен)</label><input type="number" id="a_low" value="40"></div>
+          <div><label for="a_high">Жоғары деңгей (%-дан бастап)</label><input type="number" id="a_high" value="85"></div>
+          <div><label for="a_sapa">Сапа (%-дан бастап)</label><input type="number" id="a_sapa" value="65"></div>
+          <div><label for="a_objT">Мақсатқа жеттi деп санау (%)</label><input type="number" id="a_objT" value="65"></div>
+        </div>
+        <p class="hint">Үлгерім = төмен деңгейден жоғары жинағандар үлесі. Сапа = «сапа» шегінен жоғары жинағандар үлесі. Мектебіңіздің өз есептеу тәртібі болса, шектерді соған келтіріңіз.</p>
+      </details>
+    </div>
+
+    <div class="card noprint">
+      <h2>Оқушылардың балдары</h2>
+      <div class="row3" style="grid-template-columns:repeat(4,1fr)">
+        <div><label for="a_max0">БЖБ 1: максимум балл</label><input type="number" id="a_max0" min="1"></div>
+        <div><label for="a_max1">БЖБ 2: максимум балл</label><input type="number" id="a_max1" min="1"></div>
+        <div><label for="a_max2">БЖБ 3: максимум балл</label><input type="number" id="a_max2" min="1"></div>
+        <div><label for="a_max3">ТЖБ: максимум балл</label><input type="number" id="a_max3" min="1"></div>
+      </div>
+      <table class="stu"><thead><tr><th>Оқушы</th><th>БЖБ 1</th><th>БЖБ 2</th><th>БЖБ 3</th><th>ТЖБ</th><th></th></tr></thead><tbody id="a_stu"></tbody></table>
+      <div class="toolbar">
+        <button class="secondary" id="a_add">+ Оқушы қосу</button>
+        <button class="secondary" id="a_import">1-беттегі нәтижелерді қайта алу</button>
+      </div>
+      <details style="margin-top:10px"><summary>Excel-ден көшіріп қою</summary>
+        <textarea id="a_paste" placeholder="Аты-жөні [Tab] БЖБ 1 [Tab] БЖБ 2 [Tab] БЖБ 3 [Tab] ТЖБ&#10;Асқар Б.  18  20  19  35"></textarea>
+        <p><button class="secondary" id="a_paste_go">Кестеге қосу</button></p>
+        <p class="hint">Әр жолда оқушының аты-жөні және оның балдары болсын. Тексерілмеген жұмыстың орнын бос қалдырыңыз.</p>
+      </details>
+    </div>
+
+    <div class="card noprint">
+      <h2>Оқу мақсаттары (қосымша)</h2>
+      <p class="hint">1-беттен оқу мақсаттары автоматты түседі. Қосымша өз мақсатыңыз болса, жеткен оқушылар санын осында қолмен жазыңыз.</p>
+      <div id="a_obj0"></div><div id="a_obj1"></div><div id="a_obj2"></div><div id="a_obj3"></div>
+    </div>
+
+    <div class="card" id="report">
+      <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button id="a_auto">Талдауды автоматты жазу</button>
+        <button class="secondary" onclick="window.print()">Басып шығару / PDF</button>
+        <button class="secondary" id="a_word">Word жүктеу</button>
+      </div>
+      <div id="a_msg" class="hint noprint"></div>
+      <p class="rcenter">Қазақстан Республикасы Оқу-ағарту министрінің 2022 жылғы 27 тамыздағы № 382 бұйрығына сәйкес.</p>
+      <p>Бөлім бойынша жиынтық бағалау (бұдан әрі - БЖБ) мен тоқсандық жиынтық бағалау (бұдан әрі - ТЖБ) нәтижелері бойынша талдау үлгісі.</p>
+      <h3 class="rcenter" id="r_title"></h3>
+      <p><b>Сынып:</b> <span id="r_class"></span></p>
+      <p><b>Оқушылар саны:</b> <span id="r_n"></span></p>
+      <p><b>Педагог:</b> <span id="r_teacher"></span></p>
+      <p><b>Мақсаты:</b> <span id="r_goal"></span></p>
+      <h3>БЖБ және ТЖБ нәтижелерін талдау</h3>
+      <table class="rt"><thead id="r_thead"></thead><tbody id="r_tbody"></tbody></table>
+      <p class="hint" id="r_note"></p>
+      <table class="rt"><tbody id="r_obj"></tbody></table>
+      <p><b>1.</b> БЖБ және ТЖБ нәтижелерін талдау білім алушылардың мынадай білім деңгейін көрсетті:</p>
+      <div id="r_t1"></div>
+      <p><b>2.</b> Тапсырмаларды орындау барысында білім алушыларда туындаған қиындықтар тізбесі:</p>
+      <textarea id="a_diff"></textarea>
+      <p><b>3.</b> Тапсырмаларды орындау барысында білім алушыларда туындаған қиындықтардың себептері:</p>
+      <textarea id="a_reasons"></textarea>
+      <p><b>4.</b> БЖБ және ТЖБ нәтижелерін талдау қорытындысы бойынша жоспарланған жұмыс (қажет болған жағдайда білім алушылардың тегін, атын, әкесінің атын көрсетумен):</p>
+      <textarea id="a_plan"></textarea>
+      <p>Күні <input type="text" id="a_date"></p>
+      <p>Педагогтің (тегі, аты, әкесінің аты (болған жағдайда)): <b id="r_teacher2"></b></p>
+    </div>
+  </div>
+</div>
+
+<script src="users.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const PROVIDERS = {
+  gemini:{ model:"gemini-3.8-flash", ping:"https://generativelanguage.googleapis.com/", ph:"AIza...", label:"Gemini API кілті",
+    hint:"Тегін кілтті aistudio.google.com/apikey бетінен алуға болады (Google аккаунт керек). Тегін режимде Google енгізілген деректерді модельдерін жақсарту үшін қолдануы мүмкін, сондықтан оқушылардың аты-жөні көрінетін фото жүктемеңіз. Лимиттерді AI Studio-дан көріңіз. Қате шықса, модель атауын AI Studio-дағы басқа Flash моделіне ауыстырыңыз." },
+  claude:{ model:"claude-sonnet-5-5", ping:"https://api.anthropic.com/", ph:"sk-ant-...", label:"Anthropic API кілті",
+    hint:"Кілтті console.anthropic.com сайтынан алуға болады. Бұл қызмет ақылы." }
+};
+const prov = () => $("provider").value;
+let online = false, taskImgs = [], taskTexts = [], workImgs = [], current = null, savedList = [];
+const CLS_LIST_KEY = "bjb_classes", CLS_CUR_KEY = "bjb_cls", DEF_CLS = "Негізгі";
+let CLS = DEF_CLS, CLASSES = [DEF_CLS];
+try{
+  for (const base of ["bjb_saved_v1", "bjb_an_v1"]){
+    const leg = localStorage.getItem(base);
+    if (leg){ if (!localStorage.getItem(base + ":" + DEF_CLS)) localStorage.setItem(base + ":" + DEF_CLS, leg); localStorage.removeItem(base); }
+  }
+  const l = JSON.parse(localStorage.getItem(CLS_LIST_KEY) || "null");
+  if (Array.isArray(l) && l.length) CLASSES = l;
+  const c = localStorage.getItem(CLS_CUR_KEY);
+  CLS = (c && CLASSES.includes(c)) ? c : CLASSES[0];
+}catch(e){}
+const STORE = "bjb_saved_v1:" + CLS;
+function saveStore(){ try{ localStorage.setItem(STORE, JSON.stringify(savedList)); }catch(e){} }
+try{
+  const raw = localStorage.getItem(STORE);
+  if (raw){ const arr = JSON.parse(raw); if (Array.isArray(arr)){ const hasAn = !!localStorage.getItem("bjb_an_v1:" + CLS); savedList = arr.map(h => Object.assign(h, { synced: hasAn && !!h.synced })); } }
+}catch(e){}
+const SCHEMES = {};
+let curType = $("type").value;
+function redrawThumbs(el, arr){
+  el.innerHTML = "";
+  arr.forEach(r => { const im = document.createElement("img"); im.src = r.url; el.appendChild(im); });
+}
+const PH_B = $("scheme").placeholder;
+const PH_T = "1-тапсырма | Жауабы: 36 км/сағ | Макс. балл: 1\n2-тапсырма | Жауабы: B | Макс. балл: 1\n3-тапсырма | Жауабы: 120 | Макс. балл: 2";
+const HINT_B = $("schemeHint").textContent;
+function isTzb(){ return $("type").value === "ТЖБ"; }
+function modeText(){
+  return isTzb()
+    ? "ТЖБ: мұғалім тек дұрыс жауаптар мен баллдарды берген. Дескриптор қолданба, descriptors бос массив болсын. Әр тапсырманы дұрыс жауаппен салыстырып балл қой: жауап дұрыс болса толық балл, қате болса 0 (схемада ішінара балл көрсетілсе, соны қолдан). Дұрыс жауабы схемада жоқ тапсырманы өзің шешіп, needs_review: true қой. obj өрісін схемада оқу мақсаты көрсетілсе ғана жаз, әйтпесе бос қалдыр."
+    : "БЖБ: оқу мақсаты мен дескрипторлар бойынша тексер.";
+}
+function applyMode(){
+  const t = isTzb();
+  $("schemeLabel").textContent = t ? "Дұрыс жауаптар және баллдар" : "Оқу мақсаттары, дескрипторлар, балл және дұрыс жауаптар";
+  $("scheme").placeholder = t ? PH_T : PH_B;
+  $("genScheme").textContent = t ? "AI-мен дұрыс жауаптарды ұсыну" : "AI-мен дескриптор құру / толықтыру";
+  $("schemeHint").textContent = t
+    ? "ТЖБ-да дескриптор керек емес: тек дұрыс жауаптар мен баллдарды жазыңыз. Не тапсырма фотосын жүктеп, батырманы басыңыз, AI дұрыс жауаптарды ұсынады. Ұсынылған жауаптарды міндетті түрде өзіңіз тексеріп, түзетіңіз."
+    : HINT_B;
+}
+applyMode();
+$("type").addEventListener("change", () => {
+  SCHEMES[curType] = { scheme: $("scheme").value, imgs: taskImgs.slice(), texts: taskTexts.slice() };
+  curType = $("type").value;
+  const st = SCHEMES[curType] || { scheme:"", imgs:[] };
+  $("scheme").value = st.scheme;
+  taskImgs.length = 0; st.imgs.forEach(i => taskImgs.push(i));
+  taskTexts.length = 0; (st.texts || []).forEach(d => taskTexts.push(d));
+  drawTask();
+  $("taskPhotos").value = "";
+  applyMode();
+});
+
+/* ---------- Интернет ---------- */
+async function checkOnline(){
+  online = navigator.onLine !== false;
+  $("net").className = "status " + (online ? "on" : "off");
+  $("netText").textContent = online ? "Интернет бар" : "Интернет жоқ — тексеру мүмкін емес";
+  refreshBtn();
+  return online;
+}
+function refreshBtn(){
+  const miss = [];
+  if (!online) miss.push("интернет");
+  if (!$("apikey").value.trim()) miss.push("API кілті");
+  if (!workImgs.length) miss.push("оқушы жұмысының фотосы");
+  $("run").disabled = miss.length > 0;
+  $("need").textContent = miss.length ? "Батырма өшіп тұр, жетпейтіні: " + miss.join(", ") + "." : "";
+}
+window.addEventListener("online", checkOnline);
+window.addEventListener("offline", checkOnline);
+checkOnline(); setInterval(checkOnline, 15000);
+
+/* ---------- Кілт ---------- */
+function applyProvider(){
+  const p = PROVIDERS[prov()];
+  $("keyLabel").textContent = p.label; $("apikey").placeholder = p.ph; $("keyHint").textContent = p.hint;
+  let m = null, k = null;
+  try{ m = localStorage.getItem("ai_model2_" + prov()); k = localStorage.getItem("ai_key_" + prov()); }catch(e){}
+  $("model").value = m || p.model;
+  $("apikey").value = k || "";
+  $("remember").checked = !!k;
+  refreshBtn(); checkOnline();
+}
+$("provider").addEventListener("change", () => { try{ localStorage.setItem("ai_provider", prov()); }catch(e){} applyProvider(); });
+$("model").addEventListener("input", () => { try{ localStorage.setItem("ai_model2_" + prov(), $("model").value.trim()); }catch(e){} });
+$("apikey").addEventListener("input", () => {
+  try{ if ($("remember").checked) localStorage.setItem("ai_key_" + prov(), $("apikey").value.trim()); }catch(e){}
+  refreshBtn();
+});
+$("remember").addEventListener("change", () => {
+  try{
+    if ($("remember").checked) localStorage.setItem("ai_key_" + prov(), $("apikey").value.trim());
+    else localStorage.removeItem("ai_key_" + prov());
+  }catch(e){}
+});
+try{ const sp = localStorage.getItem("ai_provider"); if (sp && PROVIDERS[sp]) $("provider").value = sp; }catch(e){}
+applyProvider();
+
+/* ---------- Фото өңдеу ---------- */
+function toJpegB64(file, maxSide = 1568){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const dataUrl = c.toDataURL("image/jpeg", 0.85);
+      URL.revokeObjectURL(url);
+      res({ b64: dataUrl.split(",")[1], url: dataUrl });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Фотоны ашу мүмкін болмады: " + file.name)); };
+    img.src = url;
+  });
+}
+
+/* ---------- Тапсырма файлы: PDF / Word / фото ---------- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("Кітапхананы жүктеу мүмкін болмады (интернетті тексеріңіз)"));document.head.appendChild(s)})}
+async function pdfLib(){
+  if (window.__pdfReady) return window.pdfjsLib;
+  const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  await loadScript(base + "pdf.min.js");
+  const w = await (await fetch(base + "pdf.worker.min.js")).text();
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([w], { type:"text/javascript" }));
+  window.__pdfReady = true; return window.pdfjsLib;
+}
+async function pdfToImgs(file){
+  const lib = await pdfLib();
+  const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const n = Math.min(doc.numPages, 8), out = [];
+  for (let i = 1; i <= n; i++){
+    const pg = await doc.getPage(i), v0 = pg.getViewport({ scale: 1 });
+    const k = Math.min(2, 1568 / Math.max(v0.width, v0.height)), vp = pg.getViewport({ scale: k });
+    const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+    const u = c.toDataURL("image/jpeg", 0.85); out.push({ b64: u.split(",")[1], url: u });
+  }
+  return { imgs: out, pages: doc.numPages };
+}
+async function docxToText(file){
+  if (!window.mammoth) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+  const r = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+  return (r.value || "").trim();
+}
+function drawTask(){
+  const el = $("taskThumbs"); redrawThumbs(el, taskImgs);
+  taskTexts.forEach(d => {
+    const s = document.createElement("span");
+    s.style.cssText = "display:inline-block;background:#e9edf8;border-radius:8px;padding:6px 10px;margin:4px;font-size:.85rem";
+    s.textContent = "📄 " + d.name + " (" + d.text.length + " таңба)"; el.appendChild(s);
+  });
+}
+function taskTextBlock(){
+  return taskTexts.length ? "\nТапсырма мәтіні (Word файлынан):\n" + taskTexts.map(d => d.text).join("\n\n").slice(0, 12000) + "\n" : "";
+}
+async function loadTaskFiles(){
+  const inp = $("taskPhotos"), msg = $("schemeMsg");
+  taskImgs.length = 0; taskTexts.length = 0; drawTask(); msg.textContent = "";
+  for (const f of inp.files){
+    const nm = f.name.toLowerCase();
+    try{
+      if (f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/.test(nm)){
+        taskImgs.push(await toJpegB64(f));
+      } else if (nm.endsWith(".pdf") || f.type === "application/pdf"){
+        msg.textContent = "PDF оқылып жатыр...";
+        const r = await pdfToImgs(f); r.imgs.forEach(i => taskImgs.push(i));
+        msg.textContent = r.pages > 8 ? "PDF-тің алғашқы 8 беті алынды." : "";
+      } else if (nm.endsWith(".docx")){
+        msg.textContent = "Word оқылып жатыр...";
+        const t = await docxToText(f);
+        if (!t) throw new Error("Word файлынан мәтін табылмады: " + f.name);
+        taskTexts.push({ name: f.name, text: t }); msg.textContent = "";
+      } else if (nm.endsWith(".doc")){
+        throw new Error(".doc ескі форматын оқи алмаймын. Word-та «Басқаша сақтау» арқылы .docx немесе PDF етіп сақтап жүктеңіз.");
+      } else throw new Error("Қолдау жоқ формат: " + f.name + ". PDF, Word (.docx) немесе фото жүктеңіз.");
+    }catch(e){ msg.textContent = "Қате: " + (e && e.message ? e.message : e); }
+    drawTask();
+  }
+  refreshBtn();
+}
+async function loadFiles(input, thumbsEl, store){
+  store.length = 0; thumbsEl.innerHTML = "";
+  for (const f of input.files){
+    try{
+      const r = await toJpegB64(f);
+      store.push(r);
+      const im = document.createElement("img"); im.src = r.url; thumbsEl.appendChild(im);
+    }catch(e){ $("msg").textContent = e.message; }
+  }
+  refreshBtn();
+}
+$("taskPhotos").addEventListener("change", loadTaskFiles);
+$("workPhotos").addEventListener("change", () => loadFiles($("workPhotos"), $("workThumbs"), workImgs));
+
+/* ---------- AI шақыру ---------- */
+const SYSTEM = `Сен — қазақстандық мектептің тәжірибелі мұғалімісің және оқушылардың қолжазба БЖБ/ТЖБ жұмыстарын оқу мақсаттары мен дескрипторлар бойынша әділ тексересің.
+Жауапты ТЕК жарамды JSON түрінде бер, басқа мәтін жазба. Құрылымы:
+{
+ "tasks":[{"no":"1","obj":"оқу мақсатының коды мен қысқа атауы","max":2,"score":1,"descriptors":[{"text":"дескриптор мәтіні","met":true,"evidence":"оқушы жауабынан қысқа дәйексөз немесе мазмұн, орындалмаса бос қалдыр"}],"student_answer":"оқушы жазғанның қысқаша мазмұны","correct_answer":"дұрыс жауап немесе шешу жолы","comment":"қысқа түсіндірме: не дұрыс, қай жерде қате","needs_review":false,"mark":{"page":1,"box":[ymin,xmin,ymax,xmax]}}],
+ "total":0,
+ "max_total":0,
+ "feedback":"оқушыға 2-3 сөйлем ұсыныс"
+}
+Ережелер:
+- Мұғалімнің схемасы (оқу мақсаты, дескрипторлар, балл, дұрыс жауап) берілсе, дәл соны қолдан: әр дескрипторды орындалды (met:true) немесе орындалмады (met:false) деп белгіле. Тапсырма балы = орындалған дескрипторлардың баллы. Схемада балл көрсетілмесе, әр дескриптор 1 балл.
+- "obj" өрісіне схемадағы оқу мақсатын барлық оқушы үшін БІРДЕЙ жазылыммен бер (кодын да, атауын да өзгертпе), өйткені нәтижелер сыныпқа жинақталады. Дескриптор мәтінін де схемадағыдай қолдан.
+- Мұғалімнің хабарламасындағы «Режим» жолында ТЖБ деп берілсе, дескрипторсыз, тек дұрыс жауап бойынша тексер. БЖБ болса, оқу мақсаты мен дескрипторлар бойынша тексер.
+- Оқушы жауабын өз сөзімен, еркін жазса (пікір, түсіндірме, шығарма, қорытынды), жауапты сөзбе-сөз емес, МАЗМҰНЫ бойынша дескрипторға сәйкестендір: оқушы дескриптордағы ойды басқа сөздермен айтса да, "met": true. Дескрипторға сай нақты дәлел жауапта болмаса, "met": false қой және ештеңені оқушының орнына ойдан толықтырма. Әр дескриптордың "evidence" өрісіне оқушы жазған қысқа үзінді немесе мазмұнын жаз.
+- Жауап ішінара сай немесе екіұшты болса, нақты бір жағына шешім қабылда да, "needs_review": true қойып, комментте себебін жаз.
+- Схема берілмесе, тапсырма фотосынан оқу мақсаттары мен дескрипторларды өзің құр және needs_review: true қой.
+- Сыныптың ерекшелігі мен оқушыға ескертуді ескер (мысалы, ЕБҚ, тіл деңгейі): дескриптор талабын төмендетпе, бірақ дескрипторға кірмесе, емле қателері мен қолжазба сапасы үшін балл азайтпа, жауаптың мазмұнына баға қой.
+- Қолжазба нашар оқылса немесе сенімсіз болсаң, "needs_review": true қой және комментте себебін жаз. Ештеңені ойдан қоспа.
+- "mark" — оқушы жұмысында осы тапсырманың жауабы жазылған аймақ. "page" — ТЕК оқушы жұмысы беттерінің нөмірі (1-ден бастап, тапсырма немесе баллдау кестесінің суреттерін санама). "box" — [ymin,xmin,ymax,xmax], 0-ден 1000-ға дейін нормаланған координаттар (бет суретінің жоғарғы сол бұрышы 0,0, төменгі оң бұрышы 1000,1000). Жауапты толық қамтитын тік төртбұрыш бер. Жауап көрінбесе немесе орнын дәл анықтай алмасаң, "mark" өрісін қалдырма.
+- "total" — барлық "score" қосындысы, "max_total" — барлық "max" қосындысы.
+- Барлық мәтін қазақ тілінде (оқушы жауабын түпнұсқа тілінде қалдыруға болады).`;
+
+$("run").addEventListener("click", async () => {
+  await checkOnline();
+  if (!online){ $("msg").textContent = "Интернет жоқ. Қосылып, қайта көріңіз."; return; }
+  $("run").disabled = true; $("spin").style.display = "block"; $("msg").textContent = "";
+  try{
+    const intro = taskImgs.length ? "Төмендегі фото(лар) — тапсырма немесе баллдау кестесі:" : null;
+    const userText =
+      `Жұмыс түрі: ${$("type").value}\nПән/сынып: ${$("subject").value || "көрсетілмеген"}\n` +
+      `Режим: ${modeText()}\n` +
+      `Сыныптың ерекшелігі: ${$("classInfo").value.trim() || "көрсетілмеген"}\n` +
+      `Осы оқушыға ескерту: ${$("studentNote").value.trim() || "жоқ"}\n` +
+      `Мұғалімнің схемасы (оқу мақсаттары, дескрипторлар, балл, дұрыс жауап):\n${$("scheme").value.trim() || "(берілмеген, тапсырма фотосынан өзің құр)"}\n\n${taskTextBlock()}\nЖұмысты тексеріп, JSON қайтар.`;
+    const nT = taskImgs.length, nW = workImgs.length;
+    const order = (nT ? "Фотолар реті: алғашқы " + nT + " сурет — тапсырма немесе баллдау кестесі; одан кейінгі " + nW + " сурет — оқушы жұмысының беттері (ретімен).\n" : "Барлық " + nW + " сурет — оқушы жұмысының беттері (ретімен).\n");
+    current = await askJSON(SYSTEM, order + userText, taskImgs.concat(workImgs));
+    current.pages = workImgs.map(w => w.url);
+    $("marks").dataset.ready = "";
+    autoSave();
+    render();
+  }catch(err){
+    $("msg").textContent = "Қате: " + (err && err.message ? err.message : err);
+  }finally{
+    $("spin").style.display = "none"; refreshBtn();
+  }
+});
+
+/* ---------- Нәтижені көрсету ---------- */
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function render(){
+  const box = $("tasks"); box.innerHTML = "";
+  (current.tasks || []).forEach((t, i) => {
+    const d = document.createElement("div");
+    d.className = "task" + (t.needs_review ? " review" : "");
+    d.innerHTML =
+      `<div class="task-head"><strong>${esc(t.no)}-тапсырма ${t.needs_review ? '<span class="tag">қарау керек</span>' : ''}</strong>
+       <span class="pts"><input type="number" step="0.5" min="0" max="${Number(t.max)||0}" value="${Number(t.score)||0}" data-i="${i}"> / ${Number(t.max)||0} балл</span></div>
+       ${t.obj ? `<div class="k">Оқу мақсаты</div><div>${esc(t.obj)}</div>` : ""}${(t.descriptors && t.descriptors.length) ? `<div class="k">Дескрипторлар</div><div>${t.descriptors.map(x => (x.met ? "✔ " : "✘ ") + esc(x.text) + (x.met && x.evidence ? ` <span class="hint">— «${esc(x.evidence)}»</span>` : "")).join("<br>")}</div>` : ""}<div class="k">Оқушы жауабы</div><div>${esc(t.student_answer)}</div>
+       <div class="k">Дұрыс жауап</div><div>${esc(t.correct_answer)}</div>
+       <div class="k">Түсініктеме</div><div>${esc(t.comment)}</div>`;
+    box.appendChild(d);
+  });
+  box.querySelectorAll("input[type=number]").forEach(inp => inp.addEventListener("input", () => {
+    const t = current.tasks[+inp.dataset.i];
+    t.score = Math.min(Number(t.max) || 0, Math.max(0, parseFloat(inp.value) || 0));
+    totals();
+  }));
+  $("who").textContent = $("student").value ? "— " + $("student").value : "";
+  $("feedback").innerHTML = current.feedback ? `<p><strong>Ұсыныс:</strong> ${esc(current.feedback)}</p>` : "";
+  $("resCard").style.display = "block";
+  totals();
+  $("resCard").scrollIntoView({behavior:"smooth"});
+}
+
+/* ---------- Жұмыстағы жасыл / қызыл белгілер ---------- */
+const MC = { ok:"#1e9e4a", part:"#f09a00", bad:"#d93025" };
+function markColor(t){
+  const sc = Number(t.score) || 0, mx = Number(t.max) || 0;
+  return (mx && sc >= mx) ? MC.ok : (sc <= 0 ? MC.bad : MC.part);
+}
+function drawMarks(){
+  const box = $("marks");
+  if (!current || !current.pages || !(current.tasks || []).some(t => t.mark && Array.isArray(t.mark.box) && t.mark.box.length === 4)){ box.innerHTML = ""; box.dataset.ready = ""; return; }
+  if (box.dataset.ready !== String(current.pages.length) || !current._imgs){
+    box.innerHTML = '<div class="k">Жұмыстағы белгілер</div>' +
+      '<div class="lg"><span><i style="background:' + MC.ok + '"></i>толық балл</span><span><i style="background:' + MC.part + '"></i>ішінара</span><span><i style="background:' + MC.bad + '"></i>0 балл</span></div>' +
+      '<p class="hint">Орналасуы шамамен көрсетіледі, AI жауап орнын сәл ауытқытуы мүмкін. Түстер баллға қарай өзгереді.</p>';
+    current.pages.forEach(() => box.appendChild(document.createElement("canvas")));
+    box.dataset.ready = String(current.pages.length);
+    current._imgs = current.pages.map(u => { const im = new Image(); im.onload = drawMarks; im.src = u; return im; });
+  }
+  const cvs = box.querySelectorAll("canvas");
+  current._imgs.forEach((im, pi) => {
+    const c = cvs[pi]; if (!c || !im.complete || !im.naturalWidth) return;
+    const w = im.naturalWidth, h = im.naturalHeight;
+    c.width = w; c.height = h;
+    const g = c.getContext("2d"); g.drawImage(im, 0, 0, w, h);
+    const lw = Math.max(4, w / 200), fs = Math.max(18, w / 30);
+    (current.tasks || []).forEach(t => {
+      const m = t.mark; if (!m || Number(m.page) !== pi + 1 || !Array.isArray(m.box) || m.box.length !== 4) return;
+      const [y1, x1, y2, x2] = m.box.map(Number);
+      if ([y1, x1, y2, x2].some(v => !isFinite(v))) return;
+      const X1 = Math.min(x1, x2) / 1000 * w, X2 = Math.max(x1, x2) / 1000 * w;
+      const Y1 = Math.min(y1, y2) / 1000 * h, Y2 = Math.max(y1, y2) / 1000 * h;
+      const col = markColor(t);
+      g.fillStyle = col + "22"; g.fillRect(X1, Y1, X2 - X1, Y2 - Y1);
+      g.strokeStyle = col; g.lineWidth = lw; g.strokeRect(X1, Y1, X2 - X1, Y2 - Y1);
+      const label = String(t.no) + "  " + (Number(t.score) || 0) + "/" + (Number(t.max) || 0);
+      g.font = "bold " + fs + "px Arial"; const tw = g.measureText(label).width + fs * 0.6;
+      const ly = Y1 - fs * 1.25 >= 0 ? Y1 - fs * 1.25 : Y1;
+      g.fillStyle = col; g.fillRect(X1, ly, tw, fs * 1.25);
+      g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(label, X1 + fs * 0.3, ly + fs * 0.62);
+    });
+  });
+}
+function totals(){
+  let s = 0, m = 0;
+  current.tasks.forEach(t => { s += Number(t.score) || 0; m += Number(t.max) || 0; });
+  current.total = s; current.max_total = m;
+  const pct = m ? Math.round(s / m * 100) : 0;
+  $("score").textContent = `${$("type").value}: ${s} / ${m} балл (${pct}%)`;
+  if (current.entry){
+    current.entry.tasks.forEach((x, i) => { if (current.tasks[i]) x.score = Number(current.tasks[i].score) || 0; });
+    current.entry.total = s; current.entry.max = m; current.entry.synced = false;
+    refreshHist();
+  }
+  drawMarks();
+}
+
+/* ---------- Тізім және CSV ---------- */
+function autoSave(){
+  const type = $("type").value;
+  let name = $("student").value.trim();
+  if (!name){ name = "Оқушы " + (savedList.filter(e => e.type === type).length + 1); $("student").value = name; }
+  const tasks = (current.tasks || []).map(t => ({
+    no: String(t.no), obj: String(t.obj || "").trim(), max: Number(t.max) || 0, score: Number(t.score) || 0,
+    desc: (t.descriptors || []).map(d => ({ text: String(d.text || ""), met: !!d.met }))
+  }));
+  let entry = savedList.find(e => e.type === type && e.name === name);
+  if (!entry){ entry = { name, type }; savedList.push(entry); }
+  entry.tasks = tasks;
+  entry.total = tasks.reduce((x, t) => x + t.score, 0);
+  entry.max = tasks.reduce((x, t) => x + t.max, 0);
+  entry.synced = false;
+  current.entry = entry;
+  refreshHist();
+}
+function refreshHist(){
+  const tb = $("hist"); tb.innerHTML = "";
+  savedList.forEach((h, i) => {
+    const tr = document.createElement("tr");
+    const pct = h.max ? Math.round(h.total / h.max * 100) : 0;
+    tr.innerHTML = `<td>${esc(h.name)}</td><td>${esc(h.type)}</td><td>${h.total} / ${h.max}</td><td>${pct}%</td><td class="noprint"><button class="secondary" title="Өшіру">×</button></td>`;
+    tr.querySelector("button").addEventListener("click", () => {
+      if (!confirm("«" + h.name + "» (" + h.type + ") нәтижесін өшіресіз бе?")) return;
+      savedList.splice(i, 1); refreshHist();
+    });
+    tb.appendChild(tr);
+  });
+  $("histCard").style.display = savedList.length ? "block" : "none";
+  saveStore();
+}
+refreshHist();
+$("nextStu").addEventListener("click", () => {
+  $("student").value = ""; $("studentNote").value = ""; $("workPhotos").value = "";
+  workImgs.length = 0; $("workThumbs").innerHTML = ""; current = null;
+  $("resCard").style.display = "none"; refreshBtn();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+async function saveFile(name, data, mime){
+  try{
+    const d = window.claude ? await claude.use("downloads") : null;
+    if (d){ await d.save({ filename: name, data: new Blob([data], { type: mime }) }); return; }
+  }catch(e){ if (e && e.code === "declined") return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], { type: mime }));
+  a.download = name; a.click();
+}
+$("histClear").addEventListener("click", () => {
+  if (!savedList.length) return;
+  if (!confirm("Сақталған барлық " + savedList.length + " нәтиже өшіріледі. Жалғастырасыз ба?")) return;
+  savedList.length = 0; refreshHist();
+});
+$("csv").addEventListener("click", () => {
+  const rows = [["Оқушы","Жұмыс","Балл","Максимум","Пайыз"]].concat(savedList.map(h => [h.name, h.type, h.total, h.max, h.max ? Math.round(h.total/h.max*100) : 0]));
+  const csv = "\uFEFF" + rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\n");
+  saveFile("natizhe.csv", csv, "text/csv;charset=utf-8");
+});
+
+/* ================= 2-бет: БЖБ / ТЖБ талдауы ================= */
+const KIN = ["БЖБ 1","БЖБ 2","БЖБ 3","ТЖБ"];
+const KI = KIN.map((_, i) => i);
+const A = { stu:[], obj:[[],[],[],[]] };
+const num = v => { const x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(x) ? x : null; };
+const f1 = x => String(Math.round(x*10)/10).replace(".", ",");
+const cp = (c, n) => c + " (" + f1(c / n * 100) + "%)";
+function th(){
+  const g = (id, d) => { const v = num($(id).value); return v === null ? d : v; };
+  return { low:g("a_low",40), high:g("a_high",85), sapa:g("a_sapa",65), obj:g("a_objT",65) };
+}
+function autosize(el){ el.style.height = "auto"; el.style.height = Math.max(60, el.scrollHeight + 2) + "px"; }
+["a_diff","a_reasons","a_plan"].forEach(id => $(id).addEventListener("input", e => autosize(e.target)));
+function amsg(t){ $("a_msg").textContent = t || ""; }
+
+let askedFor = -1;
+function showPage(n){
+  $("page1").style.display = n === 1 ? "block" : "none";
+  $("page2").style.display = n === 2 ? "block" : "none";
+  $("page3").style.display = n === 3 ? "block" : "none";
+  $("tab3").classList.toggle("on", n === 3);
+  $("tab1").classList.toggle("on", n === 1);
+  $("tab2").classList.toggle("on", n === 2);
+  if (n === 2){
+    if (!$("a_class").value && CLS !== DEF_CLS) $("a_class").value = CLS;
+    if (!$("a_subj").value && $("subject").value){
+      const parts = $("subject").value.split(",");
+      $("a_subj").value = parts[0].trim();
+      if (parts[1] && !$("a_class").value) $("a_class").value = parts.slice(1).join(",").trim();
+    }
+    if (!$("a_date").value){
+      const d = new Date(), z = x => String(x).padStart(2, "0");
+      $("a_date").value = z(d.getDate()) + "." + z(d.getMonth()+1) + "." + d.getFullYear();
+    }
+    let ch = 0;
+    const pc = savedList.filter(h => !h.synced).length;
+    if (pc && pc !== askedFor){
+      askedFor = pc;
+      if (confirm("Сақталған нәтижелер бар: " + pc + " жұмыс.\nОларды талдауға аласыз ба?\n\nОК — алу, Бас тарту — қазір алмау.")) ch = syncFromSaved();
+    }
+    renderStu(); renderObj(); renderReport();
+    if (ch) autoWrite(false);
+  }
+}
+$("tab1").addEventListener("click", () => showPage(1));
+$("tab2").addEventListener("click", () => showPage(2));
+$("tab3").addEventListener("click", () => showPage(3));
+
+/* ---- статистика ---- */
+function stats(k){
+  const max = num($("a_max" + k).value), t = th();
+  const vals = A.stu.map(s => num(s.s[k])).filter(v => v !== null);
+  const n = vals.length;
+  if (!n || !max) return { k, n, max, ok:false };
+  let low = 0, mid = 0, high = 0, sapa = 0, ulg = 0;
+  vals.forEach(v => {
+    const p = v / max * 100;
+    if (p < t.low) low++; else if (p >= t.high) high++; else mid++;
+    if (p >= t.sapa) sapa++;
+    if (p >= t.low) ulg++;
+  });
+  return { k, n, max, ok:true, low, mid, high, sapa: sapa / n * 100, ulg: ulg / n * 100 };
+}
+function autoObj(k){
+  const type = KIN[k], map = {}, dmap = {}, T = th();
+  savedList.filter(h => h.type === type).forEach(h => {
+    const byObj = {};
+    (h.tasks || []).forEach(t => {
+      if (t.obj){ const o = byObj[t.obj] = byObj[t.obj] || { s:0, m:0 }; o.s += t.score; o.m += t.max; }
+      (t.desc || []).forEach(d => {
+        const key = d.text.trim(); if (!key) return;
+        const r = dmap[key] = dmap[key] || { met:0, tot:0 }; r.tot++; if (d.met) r.met++;
+      });
+    });
+    Object.keys(byObj).forEach(key => {
+      const r = map[key] = map[key] || { met:0, tot:0 }; r.tot++;
+      if (byObj[key].m > 0 && byObj[key].s / byObj[key].m * 100 >= T.obj) r.met++;
+    });
+  });
+  return { obj: map, desc: dmap };
+}
+function objSplit(k){
+  const t = th(), ok = [], bad = [], au = autoObj(k);
+  Object.keys(au.obj).forEach(key => {
+    const r = au.obj[key], pc = r.met / r.tot * 100;
+    (pc >= t.obj ? ok : bad).push(key + " (" + f1(pc) + "%)");
+  });
+  const st = stats(k);
+  A.obj[k].forEach(o => {
+    const txt = (o.t || "").trim(), c = num(o.n);
+    if (!txt || c === null || !st.n) return;
+    const pc = c / st.n * 100;
+    (pc >= t.obj ? ok : bad).push(txt + " (" + f1(pc) + "%)");
+  });
+  const miss = Object.keys(au.desc).map(key => ({ key, pc: au.desc[key].met / au.desc[key].tot * 100 }))
+    .filter(x => x.pc < t.obj).sort((x, y) => x.pc - y.pc).slice(0, 5)
+    .map(x => x.key + " (" + f1(x.pc) + "%)");
+  return { ok, bad, miss };
+}
+
+/* ---- оқушылар кестесі ---- */
+function renderStu(){
+  const tb = $("a_stu"); tb.innerHTML = "";
+  A.stu.forEach((s, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td><input type="text" data-f="name"></td>' +
+      KI.map(k => '<td><input type="text" inputmode="decimal" data-k="' + k + '"></td>').join("") +
+      '<td><button class="secondary" data-del="1">×</button></td>';
+    const ni = tr.querySelector('[data-f="name"]');
+    ni.value = s.name; ni.addEventListener("input", e => { s.name = e.target.value; renderReport(); });
+    tr.querySelectorAll("[data-k]").forEach(inp => {
+      const k = +inp.dataset.k;
+      inp.value = s.s[k] == null ? "" : s.s[k];
+      inp.addEventListener("input", () => { s.s[k] = inp.value; renderReport(); });
+    });
+    tr.querySelector("[data-del]").addEventListener("click", () => { A.stu.splice(i, 1); renderStu(); renderReport(); });
+    tb.appendChild(tr);
+  });
+}
+["a_max0","a_max1","a_max2","a_max3","a_q","a_subj","a_class","a_teacher","a_goal","a_low","a_high","a_sapa","a_objT"]
+  .forEach(id => $(id).addEventListener("input", renderReport));
+
+$("a_add").addEventListener("click", () => { A.stu.push({ name:"", s:["","","",""] }); renderStu(); renderReport(); });
+
+function syncFromSaved(){
+  let changed = 0;
+  savedList.forEach(h => {
+    if (h.synced) return;
+    const k = Math.max(0, KIN.indexOf(h.type));
+    let row = A.stu.find(x => x.name === h.name);
+    if (!row){ row = { name: h.name, s:["","","",""] }; A.stu.push(row); }
+    row.s[k] = String(h.total);
+    if (h.max) $("a_max" + k).value = h.max;
+    h.synced = true; changed++;
+  });
+  saveStore();
+  return changed;
+}
+$("a_import").addEventListener("click", () => {
+  if (!savedList.length){ amsg("1-бетте әлі тексерілген жұмыс жоқ."); return; }
+  savedList.forEach(h => { h.synced = false; });
+  syncFromSaved(); amsg(savedList.length + " жұмыс алынды."); renderStu(); renderReport();
+});
+
+$("a_paste_go").addEventListener("click", () => {
+  const lines = $("a_paste").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let added = 0;
+  lines.forEach(line => {
+    let name, sc;
+    if (/[\t;]/.test(line)){
+      const p = line.split(/[\t;]/).map(x => x.trim()); name = p[0]; sc = p.slice(1, 5);
+    } else {
+      const tk = line.split(/\s+/), i = tk.findIndex(x => num(x) !== null);
+      if (i < 0){ name = line; sc = []; } else { name = tk.slice(0, i).join(" "); sc = tk.slice(i, i + 4); }
+    }
+    const hasNum = sc.some(x => num(x) !== null);
+    if (!hasNum && /^(оқушы|аты|фио|№)/i.test(name)) return;
+    if (!name && !hasNum) return;
+    if (sc.length === 3) sc = [sc[0], sc[1], "", sc[2]];
+    A.stu.push({ name, s:[sc[0] || "", sc[1] || "", sc[2] || "", sc[3] || ""] }); added++;
+  });
+  $("a_paste").value = ""; amsg(added + " оқушы қосылды."); renderStu(); renderReport();
+});
+
+/* ---- оқу мақсаттары ---- */
+function renderObj(){
+  KI.forEach(k => {
+    const box = $("a_obj" + k); box.innerHTML = '<div class="k">' + KIN[k] + '</div>';
+    A.obj[k].forEach((o, i) => {
+      const d = document.createElement("div"); d.className = "objrow";
+      d.innerHTML = '<input type="text" placeholder="Оқу мақсаты"><input type="text" inputmode="numeric" placeholder="жеткен оқушы саны"><button class="secondary">×</button>';
+      const a = d.children[0], b = d.children[1], c = d.children[2];
+      a.value = o.t; b.value = o.n;
+      a.addEventListener("input", () => { o.t = a.value; renderReport(); });
+      b.addEventListener("input", () => { o.n = b.value; renderReport(); });
+      c.addEventListener("click", () => { A.obj[k].splice(i, 1); renderObj(); renderReport(); });
+      box.appendChild(d);
+    });
+    const add = document.createElement("button"); add.className = "secondary"; add.style.marginTop = "8px";
+    add.textContent = "+ Мақсат қосу";
+    add.addEventListener("click", () => { A.obj[k].push({ t:"", n:"" }); renderObj(); });
+    box.appendChild(add);
+  });
+}
+
+/* ---- есепті құру ---- */
+function renderReport(){
+  saveAn();
+  const t = th();
+  $("r_title").textContent = ($("a_q").value || "__") + " тоқсан, " + ($("a_subj").value || "__________") + " пәні бойынша";
+  $("r_class").textContent = $("a_class").value || "—";
+  $("r_teacher").textContent = $("a_teacher").value || "—";
+  $("r_teacher2").textContent = $("a_teacher").value || "—";
+  $("r_goal").textContent = $("a_goal").value || "—";
+  const S = KI.map(stats);
+  const N = Math.max(0, ...S.map(s => s.n));
+  $("r_n").textContent = N || "—";
+
+  $("r_thead").innerHTML =
+    '<tr><th rowspan="3">Пән</th><th rowspan="3">Оқушы</th><th rowspan="3">Жоғары балл</th>' +
+    '<th colspan="3">Жиынтық бағалау балдарының пайыздық мазмұны (оқушылар саны)</th>' +
+    '<th rowspan="3">Сапа %</th><th rowspan="3">Үлгерім %</th></tr>' +
+    '<tr><th>төмен</th><th>орта</th><th>жоғары</th></tr>' +
+    '<tr><th>0-' + (t.low - 1) + '%</th><th>' + t.low + '-' + (t.high - 1) + '%</th><th>' + t.high + '-100%</th></tr>';
+  $("r_tbody").innerHTML = S.map(s => '<tr><td class="l">' + KIN[s.k] + '</td>' +
+    (s.ok ? '<td>' + s.n + '</td><td>' + s.max + '</td><td>' + cp(s.low, s.n) + '</td><td>' + cp(s.mid, s.n) +
+            '</td><td>' + cp(s.high, s.n) + '</td><td>' + f1(s.sapa) + '</td><td>' + f1(s.ulg) + '</td>'
+          : '<td colspan="7">деректер жоқ</td>') + '</tr>').join("");
+  $("r_note").textContent = "Сапа: " + t.sapa + "% және одан жоғары жинағандар үлесі. Үлгерім: " + t.low + "% және одан жоғары жинағандар үлесі.";
+
+  $("r_obj").innerHTML = '<tr><th></th><th>Қол жеткізілген мақсаттар</th><th>Қиындық тудырған мақсаттар</th></tr>' +
+    KI.map(k => { const o = objSplit(k);
+      return '<tr><td class="l">' + KIN[k] + '</td><td class="l">' + (o.ok.map(esc).join("<br>") || "—") +
+             '</td><td class="l">' + (o.bad.map(esc).join("<br>") || "—") + '</td></tr>'; }).join("");
+
+  const okS = S.filter(s => s.ok);
+  const lines = okS.map(s => '<p><b>' + KIN[s.k] + ':</b> жоғары (В) ' + t.high + '-100%: ' + cp(s.high, s.n) +
+    '; орта (С) ' + t.low + '-' + (t.high - 1) + '%: ' + cp(s.mid, s.n) +
+    '; төмен (Н) 0-' + (t.low - 1) + '%: ' + cp(s.low, s.n) +
+    '. Сапа — ' + f1(s.sapa) + '%, үлгерім — ' + f1(s.ulg) + '%.</p>');
+  if (okS.length > 1){
+    const a = okS[0], b = okS[okS.length - 1], d = b.sapa - a.sapa;
+    lines.push('<p>Сапа көрсеткіші ' + KIN[a.k] + ' бойынша ' + f1(a.sapa) + '%, ' + KIN[b.k] + ' бойынша ' + f1(b.sapa) + '% болды: ' +
+      (Math.abs(d) < 0.05 ? 'өзгеріссіз қалды' : f1(Math.abs(d)) + ' пайыздық тармаққа ' + (d > 0 ? 'өсті' : 'төмендеді')) + '.</p>');
+  }
+  let namesTbl = "";
+  if (okS.length){
+    const rows = KI.map(k => {
+      const st = S[k];
+      if (!st.ok) return '<tr><td class="l">' + KIN[k] + '</td><td colspan="3">деректер жоқ</td></tr>';
+      const g = { low:[], mid:[], high:[] };
+      A.stu.forEach(x => {
+        const v = num(x.s[k]); if (v === null) return;
+        const nm = (x.name || "").trim() || "(аты жоқ)";
+        const pc = v / st.max * 100;
+        (pc < t.low ? g.low : pc >= t.high ? g.high : g.mid).push(nm);
+      });
+      const cell = a => '<td class="l">' + (a.length ? a.map(esc).join(", ") : "—") + '</td>';
+      return '<tr><td class="l">' + KIN[k] + '</td>' + cell(g.low) + cell(g.mid) + cell(g.high) + '</tr>';
+    }).join("");
+    namesTbl = '<table class="rt"><thead><tr><th></th>' +
+      '<th>Төмен (Т): 0-' + (t.low - 1) + '%</th>' +
+      '<th>Орташа (О): ' + t.low + '-' + (t.high - 1) + '%</th>' +
+      '<th>Жоғары (Ж): ' + t.high + '-100%</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  $("r_t1").innerHTML = namesTbl + lines.join("") || '<p class="hint">Оқушылардың балдары мен максимум баллды енгізіңіз, талдау автоматты есептеледі.</p>';
+  ["a_diff","a_reasons","a_plan"].forEach(id => autosize($(id)));
+}
+
+/* ---- AI көмегімен 2-4 тармақтарды жазу ---- */
+
+function b64ToBlob(b64){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:"image/jpeg"})}
+function parseJSONLoose(text){
+  const a = text.indexOf("{"), b = text.lastIndexOf("}");
+  if (a < 0 || b < 0) throw new Error("AI жауабын оқу мүмкін болмады");
+  let t = text.slice(a, b + 1);
+  try{ return JSON.parse(t); }catch(e1){}
+  t = t.replace(/,\s*([}\]])/g, "$1").replace(/[\u0000-\u001f]+/g, " ");
+  return JSON.parse(t);
+}
+async function askJSON(system, userText, imgs){
+  let last;
+  for (let i = 0; i < 2; i++){
+    const txt = await sampleAI(system, userText, imgs, true);
+    try{ return parseJSONLoose(txt); }catch(e){ last = e; }
+  }
+  throw new Error("AI жауабының пішімі бұзылды, қайта басып көріңіз (" + (last && last.message || last) + ")");
+}
+async function sampleAI(system, userText, imgs, json){
+  imgs = imgs || [];
+  const key = $("apikey").value.trim();
+  if (!key) throw new Error("Алдымен жоғарыдағы «0. API кілті» өрісіне кілтіңізді енгізіңіз");
+  const model = $("model").value.trim() || PROVIDERS[prov()].model;
+  try{
+    if (prov() === "gemini"){
+      const parts = [{ text: userText }].concat(imgs.map(i => ({ inlineData: { mimeType: "image/jpeg", data: i.b64 } })));
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(key), {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: "user", parts }],
+          generationConfig: Object.assign({ temperature: 0.2, maxOutputTokens: 16384 }, json ? { responseMimeType: "application/json" } : {})
+        })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error((j.error && j.error.message) || ("HTTP " + r.status));
+      const c = j.candidates && j.candidates[0];
+      const t = c && c.content && c.content.parts ? c.content.parts.map(p => p.text || "").join("") : "";
+      if (!t) throw new Error("бос жауап" + (j.promptFeedback && j.promptFeedback.blockReason ? " (" + j.promptFeedback.blockReason + ")" : ""));
+      return t;
+    } else {
+      const content = imgs.map(i => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: i.b64 } }));
+      content.push({ type: "text", text: userText });
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        body: JSON.stringify({ model, max_tokens: 8000, system, messages: [{ role: "user", content }] })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error((j.error && j.error.message) || ("HTTP " + r.status));
+      return (j.content || []).map(p => p.text || "").join("");
+    }
+  }catch(e){
+    const m = (e && e.message) || String(e);
+    if (/quota|RESOURCE_EXHAUSTED|rate.?limit|\b429\b/i.test(m)){
+      const w = m.match(/retry in\s+((?:\d+h)?(?:\d+m)?\d+(?:\.\d+)?s)/i);
+      throw new Error("Бұл модельдің тегін лимиті біткен." + (w ? " Google " + w[1].replace(/\.\d+s/, "s") + " кейін қайта ашады." : "") +
+        " «0. API кілті» бөліміндегі «Модель атауы» өрісіне басқа модельдің атын жазып көріңіз (әр модельдің лимиті бөлек, тізімі: aistudio.google.com/rate-limit), не лимит жаңарғанша күтіңіз.");
+    }
+    if (/Failed to fetch|NetworkError/i.test(m)) throw new Error("Қызметке қосылу мүмкін болмады (интернет немесе VPN/бұғаттауды тексеріңіз)");
+    throw new Error(m);
+  }
+}
+async function askAI(system, userText, opts){
+  opts = opts || {};
+  return sampleAI(system, userText, opts.imgs || [], opts.json);
+}
+
+/* ---- 1-бет: дескриптор құру ---- */
+$("genScheme").addEventListener("click", async () => {
+  const m = $("schemeMsg");
+  await checkOnline();
+  if (!online){ m.textContent = "Интернет жоқ."; return; }
+    if (!taskImgs.length && !taskTexts.length && !$("scheme").value.trim()){ m.textContent = "Тапсырма файлын (PDF, Word, фото) жүктеңіз немесе схеманың бастапқы мәтінін жазыңыз."; return; }
+  $("genScheme").disabled = true; m.textContent = "AI оқу мақсатын және дескрипторларды құрып жатыр...";
+  try{
+    const SYS2 = "Сен — қазақстандық мектептің тәжірибелі мұғалімісің. Мұғалімнің БЖБ/ТЖБ жұмысының тапсырмалары бойынша бағалау схемасын құрастырасың. " +
+      "Әр тапсырма үшін: оқу мақсатының коды мен қысқа мәтіні, тапсырманың максимум балы, дұрыс жауап немесе шешу жолы және дескрипторлар (әрқайсысы 1 балл). " +
+      "Мұғалім жазған бөліктерін сақта, жетпегенін толықтыр. Фотода оқу мақсаты көрсетілмесе, тапсырмаға сай ықтимал мақсатты ұсын. Сыныптың ерекшелігін ескер. " +
+      "Формат (қарапайым мәтін, JSON емес, markdown белгілерінсіз):\n1-тапсырма | Оқу мақсаты: ... | Макс. балл: 2\nДұрыс жауап: ...\nДескрипторлар:\n1) ... (1 балл)\n2) ... (1 балл)\nҚазақ тілінде жаз.";
+    const SYS2T = "Сен — қазақстандық мектептің тәжірибелі мұғалімісің. Мұғалімнің ТЖБ жұмысының тапсырмалары бойынша дұрыс жауаптар кестесін құрастырасың. Дескриптор жазба. Әр тапсырма үшін тек дұрыс жауап (немесе қысқа шешу нәтижесі) және максимум балл. Мұғалім жазған жауаптарын сақта, жетпегенін толықтыр және сенімсіз жауапты «(тексеріңіз)» деп белгіле. Формат (қарапайым мәтін, JSON емес, markdown белгілерінсіз):\n1-тапсырма | Жауабы: ... | Макс. балл: 1\nҚазақ тілінде жаз.";
+    const u = "Жұмыс түрі: " + $("type").value + "\nПән/сынып: " + ($("subject").value || "көрсетілмеген") +
+      "\nСыныптың ерекшелігі: " + ($("classInfo").value.trim() || "көрсетілмеген") +
+      "\nМұғалімнің қолда бар схемасы:\n" + ($("scheme").value.trim() || "(жоқ)") + taskTextBlock();
+    let txt = await askAI(isTzb() ? SYS2T : SYS2, u, { imgs: taskImgs });
+    txt = txt.replace(/^```\w*\n?/, "").replace(/```\s*$/, "").trim();
+    if (!txt) throw new Error("бос жауап");
+    $("scheme").value = txt;
+    m.textContent = "Дайын. Схеманы оқып, қажет болса түзетіңіз, содан кейін оқушы жұмыстарын тексеріңіз.";
+  }catch(err){
+    m.textContent = "Қате: " + (err && err.message ? err.message : err);
+  }finally{ $("genScheme").disabled = false; }
+});
+
+/* ---- 2-бет: талдауды автоматты жазу ---- */
+const DIRTY = {};
+["a_diff","a_reasons","a_plan"].forEach(id => $(id).addEventListener("input", () => { DIRTY[id] = true; }));
+$("a_auto").addEventListener("click", () => autoWrite(true));
+
+async function autoWrite(force){
+  renderReport(); amsg("");
+  const S = KI.map(stats).filter(s => s.ok);
+  if (!S.length){ if (force) amsg("Алдымен оқушылардың балдарын (1-бетте тексеріңіз немесе қолмен енгізіңіз) және максимум баллды көрсетіңіз."); return; }
+  const t = th();
+  const setTA = (id, v) => { if (force || !DIRTY[id]){ $(id).value = v; DIRTY[id] = false; } };
+
+  const parts = [];
+  KI.forEach(k => {
+    const o = objSplit(k), seg = [];
+    if (o.bad.length) seg.push("оқушылар мына мақсаттарды орындауда қиналды: " + o.bad.join("; "));
+    if (o.miss.length) seg.push("көп оқушы мына талаптарды орындамады: " + o.miss.join("; "));
+    if (seg.length) parts.push(KIN[k] + " — " + seg.join(". ") + ".");
+  });
+  const anyObj = KI.some(k => { const o = objSplit(k); return o.ok.length || o.bad.length; });
+  setTA("a_diff", parts.length ? parts.join("\n") : (anyObj ? "Айтарлықтай қиындық байқалған жоқ." : "Оқу мақсаттары болса, қиындықтар осы жерге автоматты жазылады."));
+  autosize($("a_diff"));
+
+  if (!force && !online){
+    amsg("2-тармақ дайын. Интернет болса, 3–4 тармақтар да автоматты жазылады, не «Талдауды автоматты жазу» батырмасын басыңыз.");
+    return;
+  }
+
+  const summary = S.map(s => KIN[s.k] + ": оқушы " + s.n + ", жоғары " + s.high + ", орта " + s.mid + ", төмен " + s.low +
+    ", сапа " + f1(s.sapa) + "%, үлгерім " + f1(s.ulg) + "%").join("\n");
+  const userText = "Пән: " + ($("a_subj").value || "көрсетілмеген") + "\nСынып: " + ($("a_class").value || "көрсетілмеген") +
+    "\nСыныптың ерекшелігі: " + ($("classInfo").value.trim() || "көрсетілмеген") +
+    "\nТоқсан: " + $("a_q").value + "\nДеңгейлер: жоғары " + t.high + "-100%, орта " + t.low + "-" + (t.high - 1) + "%, төмен 0-" + (t.low - 1) + "%\n" +
+    summary + "\nҚиындықтар:\n" + (parts.join("\n") || "көрсетілмеген");
+  const SYS = 'Сен мектеп мұғалімісің, өз сыныбыңның БЖБ/ТЖБ нәтижесіне қысқаша талдау жазып жатырсың. Жауапты ТЕК жарамды JSON түрінде бер: {"reasons":"...","plan":"..."}. ' +
+    'СТИЛЬ: мұғалім өз қолымен жазғандай, қарапайым, жатық, тірі қазақ тілімен жаз. Ғылыми, кітаби, күрделі сөздерден және ұзын сөйлемдерден қаш. Сөйлем қысқа болсын, бір сөйлемде бір ой. «қалыптасу», «меңгерту», «компетенция», «рефлексия» сияқты қағаздағы шаблон сөздерді қолданба. Ұқсас сөйлемдерді қайталама. ' +
+    '"reasons": қиындықтардың ықтимал себептері, 3-4 қысқа сөйлем. Тек берілген көрсеткіштер мен қиындық тудырған мақсаттарға сүйен, нақты оқиға мен фактіні ойдан қоспа, себептерді «мүмкін», «сияқты» деген сөзбен болжам етіп жаз. ' +
+    '"plan": нәтиже бойынша жұмыс жоспары, 4-5 нөмірленген нүкте (1. 2. 3. ...), әр нүкте бір-екі қысқа сөйлем, нақты не істейтіні көрінсін (қай мақсатты қайталайды, қандай тапсырма береді, төмен деңгейдегілермен қалай жұмыс істейді, қашан қайта тексереді). Оқушылардың аттарын жазба.';
+  const fallbackReasons = "Кейбір оқушылар тақырыпты толық түсінбеген сияқты. Есептің шартын оқып, не сұралып тұрғанын анықтауда қиналған. Үйренген тәсілді жаңа тапсырмада қолдану да қиын болған. Қайталауға уақыт аз болуы мүмкін.";
+  const fallbackPlan = "1. Қиын болған тақырыптарды келесі сабақтарда қайталаймын.\n2. Төмен нәтиже көрсеткен оқушылармен жеке және топпен қосымша жұмыс жасаймын.\n3. Тапсырмаларды күрделілігі бойынша бөліп беремін.\n4. Келесі бөлім бойынша жиынтық бағалауда нәтижені қайта салыстырамын.";
+
+  $("a_auto").disabled = true; amsg("Себептері мен жоспарды жазып жатыр...");
+  try{
+    if (!online) throw new Error("Интернет жоқ");
+    const j = await askJSON(SYS, userText, []);
+    const asText = v => Array.isArray(v) ? v.join("\n") : String(v || "");
+    setTA("a_reasons", asText(j.reasons) || fallbackReasons);
+    setTA("a_plan", asText(j.plan) || fallbackPlan);
+    amsg("Дайын. 2–4 тармақтарды оқып, өзіңізге қарай түзетіңіз. Оқушылардың аттары AI-ға жіберілмеді, оларды 4-тармаққа өзіңіз қосыңыз.");
+  }catch(err){
+    setTA("a_reasons", fallbackReasons); setTA("a_plan", fallbackPlan);
+    amsg("AI қосылмады (" + (err && err.message ? err.message : err) + "). Орнына дайын үлгі мәтін қойылды, өз жағдайыңызға қарай түзетіңіз.");
+  }finally{
+    $("a_auto").disabled = false;
+    ["a_diff","a_reasons","a_plan"].forEach(id => autosize($(id)));
+  }
+}
+
+/* ---- Word жүктеу ---- */
+$("a_word").addEventListener("click", () => {
+  const clone = $("report").cloneNode(true);
+  clone.querySelectorAll(".noprint").forEach(e => e.remove());
+  clone.querySelectorAll("textarea, input").forEach(e => {
+    const d = document.createElement("div");
+    d.innerHTML = esc(e.value).replace(/\n/g, "<br>");
+    e.replaceWith(d);
+  });
+  const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8">' +
+    '<style>body{font-family:"Times New Roman";font-size:12pt}table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:4px;font-size:10pt;text-align:center}td.l{text-align:left}.rcenter{text-align:center}.hint{font-size:9pt;color:#555}</style></head><body>' +
+    clone.innerHTML + '</body></html>';
+  saveFile("BJB_TJB_talday.doc", "﻿" + html, "application/msword");
+});
+
+/* ---------- 2-бет күйін сақтау ---------- */
+const AN_KEY = "bjb_an_v1:" + CLS;
+const AN_IDS = ["a_q","a_subj","a_class","a_teacher","a_goal","a_low","a_high","a_sapa","a_objT","a_max0","a_max1","a_max2","a_max3","a_diff","a_reasons","a_plan"];
+function saveAn(){
+  try{
+    const f = {}; AN_IDS.forEach(id => { f[id] = $(id).value; });
+    localStorage.setItem(AN_KEY, JSON.stringify({ v: 2, stu: A.stu, obj: A.obj, f, dirty: DIRTY }));
+  }catch(e){}
+}
+["a_diff","a_reasons","a_plan"].forEach(id => $(id).addEventListener("input", saveAn));
+try{
+  const raw = localStorage.getItem(AN_KEY);
+  if (raw){
+    const o = JSON.parse(raw);
+    if (!o.v){  /* ескі формат: БЖБ 1, БЖБ 2, ТЖБ → БЖБ 3 бағанын қою */
+      (o.stu || []).forEach(x => { if (x && Array.isArray(x.s) && x.s.length === 3) x.s.splice(2, 0, ""); });
+      if (Array.isArray(o.obj) && o.obj.length === 3) o.obj.splice(2, 0, []);
+      if (o.f){ o.f.a_max3 = o.f.a_max2 || ""; o.f.a_max2 = ""; }
+      if (o.dirty && o.dirty.a_max2) delete o.dirty.a_max2;
+    }
+    if (Array.isArray(o.stu)){ A.stu.length = 0; o.stu.forEach(x => A.stu.push(x)); }
+    if (Array.isArray(o.obj)) o.obj.forEach((a, i) => { if (i < KIN.length && Array.isArray(a)) A.obj[i] = a; });
+    Object.keys(o.f || {}).forEach(id => { const el = $(id); if (el && o.f[id] !== "") el.value = o.f[id]; });
+    Object.assign(DIRTY, o.dirty || {});
+    ["a_diff","a_reasons","a_plan"].forEach(id => autosize($(id)));
+  }
+}catch(e){}
+
+/* ---------- Сыныптар ---------- */
+(function(){
+  const sel = $("clsSel");
+  CLASSES.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = c; if (c === CLS) o.selected = true; sel.appendChild(o); });
+  function goCls(c){
+    try{
+      if (!CLASSES.includes(c)) CLASSES.push(c);
+      localStorage.setItem(CLS_LIST_KEY, JSON.stringify(CLASSES));
+      localStorage.setItem(CLS_CUR_KEY, c);
+    }catch(e){}
+    location.reload();
+  }
+  sel.addEventListener("change", () => { saveAn(); saveStore(); goCls(sel.value); });
+  const box = $("clsNewBox"), inp = $("clsNewName");
+  $("clsNew").addEventListener("click", () => {
+    $("clsNewMsg").textContent = "";
+    box.style.display = box.style.display === "none" ? "inline-flex" : "none";
+    if (box.style.display !== "none") inp.focus();
+  });
+  function addCls(){
+    const n = inp.value.trim();
+    if (!n){ $("clsNewMsg").textContent = "Сыныптың атын жазыңыз."; inp.focus(); return; }
+    saveAn(); saveStore(); goCls(n);
+  }
+  $("clsNewOk").addEventListener("click", addCls);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); addCls(); } });
+  $("clsExport").addEventListener("click", () => {
+    saveAn(); saveStore();
+    let an = null; try{ an = JSON.parse(localStorage.getItem(AN_KEY) || "null"); }catch(e){}
+    const data = { app: "bjb-tjb", v: 1, cls: CLS, saved: savedList, an };
+    saveFile("Сынып_" + CLS.replace(/[\\\/:*?"<>|]/g, "_") + ".json", JSON.stringify(data), "application/json");
+  });
+  $("clsImport").addEventListener("change", async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try{
+      const o = JSON.parse(await f.text());
+      if (o.app !== "bjb-tjb" || !Array.isArray(o.saved)) throw new Error("Бұл осы бағдарламаның сынып файлы емес");
+      const name = String(o.cls || "Сынып").trim() || "Сынып";
+      if (CLASSES.includes(name) && !confirm("«" + name + "» сыныбы бұрыннан бар. Файлдағы деректермен ауыстырасыз ба?")) return;
+      const keepSync = !!o.an;
+      localStorage.setItem("bjb_saved_v1:" + name, JSON.stringify(o.saved.map(h => Object.assign(h, { synced: keepSync && !!h.synced }))));
+      if (o.an) localStorage.setItem("bjb_an_v1:" + name, JSON.stringify(o.an)); else localStorage.removeItem("bjb_an_v1:" + name);
+      goCls(name);
+    }catch(err){ alert("Қате: " + (err && err.message ? err.message : err)); }
+  });
+})();
+
+/* ---------- Қолдану мерзімі: әр жылдың 1 қыркүйегінен бастап сол жылдың коды сұралады (2027-2050) ---------- */
+function dateGate(){
+  const FIRST = 2027, LAST = 2050;
+  const HASHES = {"2027": "2afrsz82byl", "2028": "1cthif4ltgk", "2029": "zs6ngygawz", "2030": "8bble2dhkb", "2031": "8nw6jiyu2t", "2032": "23r2egjxme3", "2033": "zn8cfux1yg", "2034": "1gwnvf3j2k5", "2035": "1tavj3tbu3c", "2036": "204x67oit0p", "2037": "1pc79gvpd2o", "2038": "1zwwo5v6uoe", "2039": "1zg63ws7m1l", "2040": "17igd0884vm", "2041": "h1nsc89r0f", "2042": "xjhlymifoq", "2043": "10562b2veyf", "2044": "h0sn9venfa", "2045": "1oy6ogwbi06", "2046": "1lgjon01rhj", "2047": "1nfa1ts1ju", "2048": "xr2ogfy32h", "2049": "1ydvg9oqu52", "2050": "75h0gdv2at"};   /* әр жылдың кодының хэші, кодтардың өзі файлда жоқ */
+  const SK = "bjb_seen";
+  function h53(str, seed){ seed = seed || 0; let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); }
+  let now = Date.now();
+  try{ const seen = Number(localStorage.getItem(SK)) || 0; if (seen > now) now = seen; else localStorage.setItem(SK, String(now)); }catch(e){}
+  const d = new Date(now);
+  let period = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;   /* оқу жылы қыркүйекте басталады */
+  if (period < FIRST) return;
+  if (period > LAST) period = LAST;
+  const want = HASHES[period];
+  const norm = c => h53("bjb-salt:" + period + ":" + String(c).trim().toUpperCase());
+  const UK = "bjb_unlock_" + period;
+  try{ if (localStorage.getItem(UK) === want) return; }catch(e){}
+
+  const g = document.createElement("div");
+  g.id = "gate";
+  g.style.cssText = "position:fixed;inset:0;z-index:99999;background:#f5f6fb;display:flex;align-items:center;justify-content:center;padding:16px;font-family:Arial,sans-serif";
+  g.innerHTML = '<div style="background:#fff;border:1px solid #d7dbe7;border-radius:14px;padding:26px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.08)">' +
+    '<h2 style="margin:0 0 8px">Жаңа оқу жылына код керек</h2>' +
+    '<p style="margin:0 0 14px;color:#555;line-height:1.5">' + period + "–" + (period + 1) + ' оқу жылының кодын енгізіңіз. Сақталған нәтижелеріңіз жоғалмайды.</p>' +
+    '<input id="gateCode" type="text" autocomplete="off" placeholder="Код" style="width:100%;box-sizing:border-box;padding:11px;font-size:1rem;border:1px solid #c5cad8;border-radius:10px">' +
+    '<p id="gateMsg" style="color:#d93025;min-height:1.3em;margin:8px 0"></p>' +
+    '<button id="gateOk" style="width:100%;padding:11px;font-size:1rem;border:0;border-radius:10px;background:#3956d8;color:#fff;cursor:pointer">Ашу</button></div>';
+  document.body.appendChild(g);
+  document.body.style.overflow = "hidden";
+  const inp = g.querySelector("#gateCode");
+  function tryOpen(){
+    if (norm(inp.value) === want){
+      try{ localStorage.setItem(UK, want); }catch(e){}
+      g.remove(); document.body.style.overflow = "";
+    } else {
+      g.querySelector("#gateMsg").textContent = "Код дұрыс емес. Қайта көріңіз.";
+      inp.select();
+    }
+  }
+  g.querySelector("#gateOk").addEventListener("click", tryOpen);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") tryOpen(); });
+  inp.focus();
+};
+
+/* ---------- Логин / пароль (users.js ішіндегі тізім бойынша; тізім бос болса, логин сұралмайды) ---------- */
+function loginGate(next){
+  const users = Array.isArray(window.BJB_USERS) ? window.BJB_USERS : [];
+  const LK = "bjb_login", NK = "bjb_login_name";
+  function h53(str, seed){ seed = seed || 0; let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); }
+  const normName = n => String(n).trim().replace(/\s+/g, " ").toLowerCase();
+  const hashOf = (n, pw) => h53("bjb-user:" + normName(n) + ":" + pw);
+  function prefill(name){
+    const t = document.getElementById("a_teacher");
+    if (t && !t.value && name){ t.value = name; try{ saveAn(); }catch(e){} }
+  }
+  function userBar(name){
+    const bar = document.createElement("div");
+    bar.className = "noprint";
+    bar.style.cssText = "text-align:right;font-size:.85rem;color:#666;margin:4px 0";
+    bar.innerHTML = 'Кірген мұғалім: <strong></strong> · <a href="#" style="color:#3956d8">Шығу</a>';
+    bar.querySelector("strong").textContent = name;
+    bar.querySelector("a").addEventListener("click", e => {
+      e.preventDefault();
+      try{ localStorage.removeItem(LK); localStorage.removeItem(NK); }catch(err){}
+      location.reload();
+    });
+    const h = document.querySelector("h1");
+    if (h && h.parentNode) h.parentNode.insertBefore(bar, h);
+  }
+  if (!users.length){ next(); return; }
+  try{
+    const saved = localStorage.getItem(LK);
+    if (saved && users.indexOf(saved) >= 0){
+      const nm = localStorage.getItem(NK) || "";
+      userBar(nm); prefill(nm); next(); return;
+    }
+  }catch(e){}
+
+  const g = document.createElement("div");
+  g.id = "loginGate";
+  g.style.cssText = "position:fixed;inset:0;z-index:99998;background:#f5f6fb;display:flex;align-items:center;justify-content:center;padding:16px;font-family:Arial,sans-serif";
+  g.innerHTML = '<div style="background:#fff;border:1px solid #d7dbe7;border-radius:14px;padding:26px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.08)">' +
+    '<h2 style="margin:0 0 8px">Кіру</h2>' +
+    '<p style="margin:0 0 14px;color:#555;line-height:1.5">Аты-жөніңізді және сізге берілген парольді енгізіңіз.</p>' +
+    '<input id="lgName" type="text" autocomplete="off" placeholder="Аты-жөні" style="width:100%;box-sizing:border-box;padding:11px;font-size:1rem;border:1px solid #c5cad8;border-radius:10px;margin-bottom:10px">' +
+    '<input id="lgPass" type="password" autocomplete="off" placeholder="Пароль" style="width:100%;box-sizing:border-box;padding:11px;font-size:1rem;border:1px solid #c5cad8;border-radius:10px">' +
+    '<p id="lgMsg" style="color:#d93025;min-height:1.3em;margin:8px 0"></p>' +
+    '<button id="lgOk" style="width:100%;padding:11px;font-size:1rem;border:0;border-radius:10px;background:#3956d8;color:#fff;cursor:pointer">Кіру</button></div>';
+  document.body.appendChild(g);
+  document.body.style.overflow = "hidden";
+  const nameI = g.querySelector("#lgName"), passI = g.querySelector("#lgPass");
+  function tryLogin(){
+    const nm = nameI.value.trim().replace(/\s+/g, " ");
+    if (!nm || !passI.value){ g.querySelector("#lgMsg").textContent = "Аты-жөні мен парольді жазыңыз."; return; }
+    const hh = hashOf(nm, passI.value);
+    if (users.indexOf(hh) >= 0){
+      try{ localStorage.setItem(LK, hh); localStorage.setItem(NK, nm); }catch(e){}
+      g.remove(); document.body.style.overflow = "";
+      userBar(nm); prefill(nm); next();
+    } else {
+      g.querySelector("#lgMsg").textContent = "Аты немесе пароль дұрыс емес.";
+      passI.value = ""; passI.focus();
+    }
+  }
+  g.querySelector("#lgOk").addEventListener("click", tryLogin);
+  [nameI, passI].forEach(i => i.addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); }));
+  nameI.focus();
+}
+loginGate(dateGate);
+</script>
+</body>
+</html>
